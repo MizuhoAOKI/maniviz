@@ -1,4 +1,6 @@
 # custom
+/outputs/*
+/outputs/.gitkeep
 /results/*
 !/results/.gitkeep
 !/results/visualizer.html
