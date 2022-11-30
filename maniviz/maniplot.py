@@ -14,6 +14,7 @@ logger = initialize_logging(__name__)
 
 # TODO
 # - Add joint_angles_vel input
+# - make manipulator.py and move ScaraManipulator class into it.
 
 class ScaraManipulator:
     """ class to define manipulator model """
@@ -155,7 +156,7 @@ class ManipulatorVisualizer:
         for i in range(self.mani_obj.num_of_links):
             _links_pos_x.append(self.mani_obj.joint_positions_xy[i][0])
             _links_pos_y.append(self.mani_obj.joint_positions_xy[i][1])
-        self.link_line = self.ax.plot(_links_pos_x, _links_pos_y, linewidth=5, color="#005AFF")
+        self.link_line, = self.ax.plot(_links_pos_x, _links_pos_y, linewidth=5, color="#005AFF")
 
         # set layouts
         self.ax.set_aspect("equal")
@@ -182,6 +183,32 @@ class ManipulatorVisualizer:
         """ set joint angle positions """
         self.mani_obj.set_joint_angles(args)
 
+    def update_fig_elements(self) -> None:
+        """ update location of joint circles and links """
+
+        # get latest manipulator states
+        _latest_joint_positions = self.get_joint_potisions()
+
+        # update joints
+        for i in range(self.mani_obj.num_of_links):
+            self.joint_circle_patches[i].center = _latest_joint_positions[i]
+
+        # update links
+        _links_pos_x = []
+        _links_pos_y = []
+        for i in range(self.mani_obj.num_of_links):
+            _links_pos_x.append(self.mani_obj.joint_positions_xy[i][0])
+            _links_pos_y.append(self.mani_obj.joint_positions_xy[i][1])
+        self.link_line.set_data(_links_pos_x, _links_pos_y)
+
+    def set_xlim(self, arg) -> None:
+        """ set xlim of the figure """
+        self.ax.set_xlim(arg)
+
+    def set_ylim(self, arg) -> None:
+        """ set ylim of the figure """
+        self.ax.set_ylim(arg)
+
     def showfig(self) -> None:
         """ show figure """
         plt.show()
@@ -192,11 +219,14 @@ class ManipulatorVisualizer:
 
     def updatefig(self, duration=10000000) -> None:
         """ update figure for 'duration' [sec] """
+        self.update_fig_elements()
         plt.pause(duration)
 
 if __name__=="__main__":
+
     # plot example
     m = ManipulatorVisualizer(
+        manipulator_type="scara",
         num_of_links= 5,
         len_of_links=[1.0, 2.0, 3.0, 4.0, 5.0],
         base_pos = [-1.0, 3.0],
@@ -204,6 +234,16 @@ if __name__=="__main__":
         initial_joint_angles = [0.3, 0.6, 0.9, 0.6, 0.3],
     )
     m.echo_info()
+    m.set_xlim([-10, +10])
+    m.set_ylim([-2, +15])
     m.savefig()
+
+    # just show figure
     m.showfig()
-    # m.updatefig(duration=1)
+
+    # animate figure
+    # for i in range(100):
+    #     _buf = m.get_joint_angles()
+    #     _buf[0] = np.sin(i/10)
+    #     m.set_joint_angles(_buf)
+    #     m.updatefig(duration=0.1)

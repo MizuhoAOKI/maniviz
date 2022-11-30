@@ -7,7 +7,10 @@ setuptools.setup(
     name="maniviz",
     version="0.0.1",
     install_requires=[
-        "requests",
+        "rich",
+        "logging",
+        "numpy",
+        "matplotlib"
     ],
     entry_points={
         'console_scripts': [
