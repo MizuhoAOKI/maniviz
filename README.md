@@ -1,3 +1,3 @@
 # Maniviz
 
-
+empty project example
