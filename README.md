@@ -4,7 +4,7 @@ Simple visualizer of a manipulator.
 # Visualization Example
 ```
 $ cd /path/to/maniviz
-$ python maniviz/maniplot.py
+$ python -m maniviz
 ```
 
 ![](./media/result.png)

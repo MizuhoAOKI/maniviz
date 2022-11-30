@@ -3,10 +3,6 @@ from typing import Union, List
 from maniviz.utils.logger import initialize_logging
 from matplotlib import pyplot as plt
 from matplotlib import patches
-from rich.panel import Panel
-from rich.text import Text
-from rich.console import Console
-from rich.table import Table
 import rich
 import os
 import numpy as np
@@ -57,12 +53,12 @@ class ScaraManipulator:
         """ display manipulator's info """
         # Title panel
         rich.print(
-            Panel(Text("Info of the SCARA Manipulator", justify="left"), expand=False)
+            rich.panel.Panel(rich.text.Text("Info of the SCARA Manipulator", justify="left"), expand=False)
         )
 
         # Print table of joints
-        _console = Console()
-        _table = Table(show_header=True, header_style="bold")
+        _console = rich.console.Console()
+        _table = rich.table.Table(show_header=True, header_style="bold")
         _table.add_column("Joint Number", justify="center")
         _table.add_column("Link Length (m)", justify="center")
         _table.add_column("Angle (rad) ", justify="center")
