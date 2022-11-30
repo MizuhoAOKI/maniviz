@@ -1,13 +1,15 @@
 """ class to plot manipulator """
 from typing import Union, List
 from maniviz.utils.logger import initialize_logging
-import rich
+from matplotlib import pyplot as plt
+from matplotlib import patches
 from rich.panel import Panel
 from rich.text import Text
 from rich.console import Console
 from rich.table import Table
+import rich
+import os
 import numpy as np
-
 logger = initialize_logging(__name__)
 
 # TODO
@@ -66,7 +68,7 @@ class ScaraManipulator:
         for i in range(self.num_of_links):
             _format_pos_str = []
             for pos in self.joint_positions_xy[i]:
-                _format_pos_str.append(f"{pos:.3f}")
+                _format_pos_str.append(float(f"{pos:.3f}"))
             _table.add_row(str(i), f"{self.len_of_links[i]:.1f}", f"{self.joint_angles[i]:.3f}", f"{_format_pos_str}")
         _console.print(_table)
 
@@ -113,38 +115,57 @@ class ManipulatorVisualizer:
         self,
         manipulator_type: str="scara",
         **kwargs
-        # num_of_links: int = 2,
-        # len_of_links: List[float] = [1.0, 1.0],
-        # base_pos: List[float] = [0.0, 0.0],
-        # initial_state_type: str = "joint_angles", # "joint_angles, joint_positions"
-        # initial_joint_angles: List[float] = [0.3, 0.6],
-        # initial_joint_positions_xy: List[Union[float, float]] = [[0.5, 0.5], [1.5, 1.5]],
         ) -> None:
 
         # call constructor of the specified type of a manipulator
         if manipulator_type == "scara": # corresponding to 2d visualization
-            # instantiate a scara manipulator
-            # self.mani_obj = ScaraManipulator(
-            #     num_of_links=num_of_links,
-            #     len_of_links=len_of_links,
-            #     base_pos=base_pos,
-            #     initial_state_type=initial_state_type,
-            #     initial_joint_angles=initial_joint_angles,
-            #     initial_joint_positions_xy=initial_joint_positions_xy
-            # )
             self.mani_obj = ScaraManipulator(**kwargs)
-
+            # initialize a figure
+            self._init_scara_plot()
         elif manipulator_type == "vertical_multi_jointed": # corresponding to 3d visualization
             raise NotImplementedError
         else:
             logger.error(f"Invalid manipulator type '{manipulator_type}' is specified. ")
             raise AttributeError
 
+    def _init_scara_plot(self):
+        # make a figure and an axis object
+        self.fig = plt.figure(figsize=(15, 15))
+        self.ax = self.fig.add_subplot(111)
+
+        # create circle objects to draw joints
+        self.joint_circle_patches = []
+        for i in range(self.mani_obj.num_of_links):
+            _joint_circle_patch = patches.Circle(
+                xy=self.mani_obj.joint_positions_xy[i],
+                radius=self.mani_obj.len_of_links[0]/10,
+                facecolor="white",
+                angle=0,
+                edgecolor="black",
+                linewidth=3,
+                linestyle="solid",
+                zorder=10,
+            )
+            self.ax.add_patch(_joint_circle_patch)
+            self.joint_circle_patches.append(_joint_circle_patch)
+
+        # create line objects to draw links
+        _links_pos_x = []
+        _links_pos_y = []
+        for i in range(self.mani_obj.num_of_links):
+            _links_pos_x.append(self.mani_obj.joint_positions_xy[i][0])
+            _links_pos_y.append(self.mani_obj.joint_positions_xy[i][1])
+        self.link_line = self.ax.plot(_links_pos_x, _links_pos_y, linewidth=5, color="#005AFF")
+
+        # set layouts
+        self.ax.set_aspect("equal")
+        self.ax.set_xlabel("X")
+        self.ax.set_ylabel("Y")
+
     def echo_info(self) -> None:
         """ notice this manipulator's description """
         self.mani_obj.echo_info()
 
-    # ここのgetter, setterは**kwargsで引数渡すだけ.
     def get_joint_angles(self) -> List[float]:
         """ return list of joint angles """
         return self.mani_obj.get_joint_angles()
@@ -163,25 +184,26 @@ class ManipulatorVisualizer:
 
     def showfig(self) -> None:
         """ show figure """
-        pass
+        plt.show()
 
-    def savefig(self) -> None:
+    def savefig(self, filename="result.png", dirname="./outputs") -> None:
         """ save figure """
-        pass
+        self.fig.savefig(os.path.join(dirname, filename))
 
-    def updatefig(self) -> None:
-        """ update figure """
-        pass
+    def updatefig(self, duration=10000000) -> None:
+        """ update figure for 'duration' [sec] """
+        plt.pause(duration)
 
 if __name__=="__main__":
     # plot example
     m = ManipulatorVisualizer(
-        num_of_links= 2,
-        len_of_links=[1.0, 1.0],
-        base_pos = [0.0, 0.0],
+        num_of_links= 5,
+        len_of_links=[1.0, 2.0, 3.0, 4.0, 5.0],
+        base_pos = [-1.0, 3.0],
         initial_state_type = "joint_angles", # "joint_angles" or "joint_positions"
-        initial_joint_angles = [0.3, 0.6],
-        initial_joint_positions_xy = [[0.5, 0.5], [1.5, 1.5]],
+        initial_joint_angles = [0.3, 0.6, 0.9, 0.6, 0.3],
     )
-    m.set_joint_angles([2.0, 3.0])
     m.echo_info()
+    m.savefig()
+    m.showfig()
+    # m.updatefig(duration=1)
