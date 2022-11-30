@@ -13,7 +13,8 @@ import numpy as np
 logger = initialize_logging(__name__)
 
 # TODO
-# - Add joint_angles_vel input
+# - add another type of a manipulator
+# - add joint_angles_vel input
 # - make manipulator.py and move ScaraManipulator class into it.
 
 class ScaraManipulator:
@@ -108,22 +109,31 @@ class ScaraManipulator:
 
     def update_attitude_with_joint_positions(self) -> None:
         """ use forward kinematics and update joint angles with latest joint positions """
-        pass
+        raise NotImplementedError
 
 class ManipulatorVisualizer:
     """ manipulator visualizer """
     def __init__(
         self,
         manipulator_type: str="scara",
+        fig_xlim : Union[float, float] = [],
+        fig_ylim : Union[float, float] = [],
+        fig_zlim : Union[float, float] = [],
         **kwargs
         ) -> None:
 
+        # save arguments
+        self.manipulator_type = manipulator_type
+        self.fig_xlim = fig_xlim
+        self.fig_ylim = fig_ylim
+        self.fig_zlim = fig_zlim
+
         # call constructor of the specified type of a manipulator
-        if manipulator_type == "scara": # corresponding to 2d visualization
+        if self.manipulator_type == "scara": # corresponding to 2d visualization
             self.mani_obj = ScaraManipulator(**kwargs)
             # initialize a figure
             self._init_scara_plot()
-        elif manipulator_type == "vertical_multi_jointed": # corresponding to 3d visualization
+        elif self.manipulator_type == "vertical_multi_jointed": # corresponding to 3d visualization
             raise NotImplementedError
         else:
             logger.error(f"Invalid manipulator type '{manipulator_type}' is specified. ")
@@ -136,13 +146,31 @@ class ManipulatorVisualizer:
 
         # create circle objects to draw joints
         self.joint_circle_patches = []
+
+        # parameters
+        _base_facecolor = "black"
+        _base_edgecolor = "black"
+        _normal_facecolor = "white"
+        _normal_edgecolor = "black"
+
         for i in range(self.mani_obj.num_of_links):
+
+            # normal joint settings
+            _facecolor = _normal_facecolor
+            _edgecolor = _normal_edgecolor
+
+            # base joint settings
+            if i==0:
+                _facecolor = _base_facecolor
+                _edgecolor = _base_edgecolor
+
+            # add joint circle
             _joint_circle_patch = patches.Circle(
                 xy=self.mani_obj.joint_positions_xy[i],
-                radius=self.mani_obj.len_of_links[0]/10,
-                facecolor="white",
+                radius=self.mani_obj.len_of_links[0]/5,
+                facecolor=_facecolor,
                 angle=0,
-                edgecolor="black",
+                edgecolor=_edgecolor,
                 linewidth=3,
                 linestyle="solid",
                 zorder=10,
@@ -162,6 +190,35 @@ class ManipulatorVisualizer:
         self.ax.set_aspect("equal")
         self.ax.set_xlabel("X")
         self.ax.set_ylabel("Y")
+
+        # set axis range
+        _max_link_total_len = sum(self.mani_obj.len_of_links)
+
+        # set x range
+        if self.fig_xlim:
+            # manual setting
+            self.set_xlim(self.fig_xlim)
+        else:
+            # auto setting
+            self.set_xlim(
+                [
+                self.mani_obj.base_pos[0] - _max_link_total_len,
+                self.mani_obj.base_pos[0] + _max_link_total_len
+                ]
+            )
+
+        # set y range
+        if self.fig_ylim:
+            # manual setting
+            self.set_ylim(self.fig_xlim)
+        else:
+            # auto setting
+            self.set_ylim(
+                [
+                self.mani_obj.base_pos[1] - _max_link_total_len,
+                self.mani_obj.base_pos[1] + _max_link_total_len
+                ]
+            )
 
     def echo_info(self) -> None:
         """ notice this manipulator's description """
@@ -227,6 +284,8 @@ if __name__=="__main__":
     # plot example
     m = ManipulatorVisualizer(
         manipulator_type="scara",
+        fig_xlim=[],
+        fig_ylim=[],
         num_of_links= 5,
         len_of_links=[1.0, 2.0, 3.0, 4.0, 5.0],
         base_pos = [-1.0, 3.0],
@@ -234,8 +293,6 @@ if __name__=="__main__":
         initial_joint_angles = [0.3, 0.6, 0.9, 0.6, 0.3],
     )
     m.echo_info()
-    m.set_xlim([-10, +10])
-    m.set_ylim([-2, +15])
     m.savefig()
 
     # just show figure
