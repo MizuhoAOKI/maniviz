@@ -1,11 +1,19 @@
 # Maniviz
 Simple visualizer of a manipulator.
 
-# Visualization Example
+# Environmental setup
+1. `cd /path/to/workingdir`
+1. `git clone https://github.com/MizuhoAOKI/maniviz.git`
+
+# Install maniviz from pip
+You can also install maniviz easily with pip.
+
+`pip install maniviz`
+
+# Run an Example Script
 ```
-$ cd /path/to/maniviz
-$ python -m maniviz
+$ cd examples
+$ python scara_plot.py
 ```
 
-![](./media/result.png)
-
+![](./media/scara_plot.png)
