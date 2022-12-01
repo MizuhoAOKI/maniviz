@@ -1,4 +1,5 @@
 # custom
+.pypirc
 /outputs/*
 /outputs/.gitkeep
 /results/*

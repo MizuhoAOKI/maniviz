@@ -1,111 +1,12 @@
 """ class to plot manipulator """
-from typing import Union, List
+from typing import Union, List, Dict, Any
 from maniviz.utils.logger import initialize_logging
 from matplotlib import pyplot as plt
 from matplotlib import patches
-import rich
+from maniviz.models.scara_model import ScaraManipulator
 import os
 import numpy as np
 logger = initialize_logging(__name__)
-
-# TODO
-# - add another type of a manipulator
-# - add joint_angles_vel input
-# - make manipulator.py and move ScaraManipulator class into it.
-
-class ScaraManipulator:
-    """ class to define manipulator model """
-    def __init__(
-        self,
-        num_of_links: int = 2,
-        len_of_links: List[float] = [1.0, 1.0],
-        base_pos: List[float] = [1.0, 1.0],
-        initial_state_type: str = "joint_angles", # "joint_angles, joint_positions"
-        initial_joint_angles: List[float] = [0.3, 0.6],
-        initial_joint_positions_xy: List[Union[float, float]] = [[0.5, 0.5], [1.5, 1.5]],
-        ) -> None:
-
-        # save arguments
-        self.num_of_links = num_of_links # == (num of joints)
-        if self.num_of_links < 1:
-            logger.error("Invalid value of num_of_links is specified.")
-            raise AttributeError
-        self.len_of_links = len_of_links
-        self.base_pos = base_pos
-
-        # declare state variables
-        self.joint_positions_xy = initial_joint_positions_xy
-        self.joint_angles = initial_joint_angles
-
-        # calculate manipulator attitude
-        if initial_state_type == "joint_angles":
-            self.update_attitude_with_joint_angles()
-        elif initial_state_type == "joint_positions_xy":
-            self.update_attitude_with_joint_positions()
-        else:
-            logger.error(f"Invalid initial_state_type '{initial_state_type}' is specified. ")
-            raise AttributeError
-
-        # announcement
-        logger.debug("Finish building a SCARA manipulator")
-
-    def echo_info(self):
-        """ display manipulator's info """
-        # Title panel
-        rich.print(
-            rich.panel.Panel(rich.text.Text("Info of the SCARA Manipulator", justify="left"), expand=False)
-        )
-
-        # Print table of joints
-        _console = rich.console.Console()
-        _table = rich.table.Table(show_header=True, header_style="bold")
-        _table.add_column("Joint Number", justify="center")
-        _table.add_column("Link Length (m)", justify="center")
-        _table.add_column("Angle (rad) ", justify="center")
-        _table.add_column("Position [X(m),Y(m)]", justify="center")
-        for i in range(self.num_of_links):
-            _format_pos_str = []
-            for pos in self.joint_positions_xy[i]:
-                _format_pos_str.append(float(f"{pos:.3f}"))
-            _table.add_row(str(i), f"{self.len_of_links[i]:.1f}", f"{self.joint_angles[i]:.3f}", f"{_format_pos_str}")
-        _console.print(_table)
-
-    def get_joint_angles(self) -> List[float]:
-        """ return list of joint angles """
-        return self.joint_angles
-
-    def get_joint_positions(self) -> List[float]:
-        """ return list of joint positions """
-        return self.joint_positions_xy
-
-    def set_joint_angles(self, joint_angles:List[float]) -> None:
-        """ set joint angles """
-        self.joint_angles = joint_angles
-        self.update_attitude_with_joint_angles()
-
-    def set_joint_positions(self, joint_positions_xy:List[Union[float, float]]):
-        """ set joint positions """
-        self.joint_positions_xy = joint_positions_xy
-        self.update_attitude_with_joint_positions()
-
-    def update_attitude_with_joint_angles(self) -> None:
-        """ use forward kinematics and update joint positions with latest joint angles """
-        # clear joint positions
-        self.joint_positions_xy = [self.base_pos]
-
-        _len = self.len_of_links
-        _angle_cumsum = np.cumsum(self.joint_angles)
-
-        for i in range(self.num_of_links):
-            _pos = self.joint_positions_xy[-1]
-            _new_pos = [0.0, 0.0]
-            _new_pos[0] = _pos[0] + _len[i] * np.cos(_angle_cumsum[i]) # x pos
-            _new_pos[1] = _pos[1] + _len[i] * np.sin(_angle_cumsum[i]) # y pos
-            self.joint_positions_xy.append(_new_pos)
-
-    def update_attitude_with_joint_positions(self) -> None:
-        """ use forward kinematics and update joint angles with latest joint positions """
-        raise NotImplementedError
 
 class ManipulatorVisualizer:
     """ manipulator visualizer """
@@ -143,13 +44,17 @@ class ManipulatorVisualizer:
         # create circle objects to draw joints
         self.joint_circle_patches = []
 
+        # get manipulator params
+        _p = self.get_params()
+        _joint_positions_xy = self.get_joint_potisions()
+
         # parameters
         _base_facecolor = "black"
         _base_edgecolor = "black"
         _normal_facecolor = "white"
         _normal_edgecolor = "black"
 
-        for i in range(self.mani_obj.num_of_links):
+        for i in range(_p["num_of_links"]-1):
 
             # normal joint settings
             _facecolor = _normal_facecolor
@@ -160,10 +65,10 @@ class ManipulatorVisualizer:
                 _facecolor = _base_facecolor
                 _edgecolor = _base_edgecolor
 
-            # add joint circle
+            # add a joint circle
             _joint_circle_patch = patches.Circle(
-                xy=self.mani_obj.joint_positions_xy[i],
-                radius=self.mani_obj.len_of_links[0]/5,
+                xy=_joint_positions_xy[i],
+                radius=_p["len_of_links"][0]/5,
                 facecolor=_facecolor,
                 angle=0,
                 edgecolor=_edgecolor,
@@ -177,9 +82,9 @@ class ManipulatorVisualizer:
         # create line objects to draw links
         _links_pos_x = []
         _links_pos_y = []
-        for i in range(self.mani_obj.num_of_links):
-            _links_pos_x.append(self.mani_obj.joint_positions_xy[i][0])
-            _links_pos_y.append(self.mani_obj.joint_positions_xy[i][1])
+        for i in range(_p["num_of_links"]):
+            _links_pos_x.append(_joint_positions_xy[i][0])
+            _links_pos_y.append(_joint_positions_xy[i][1])
         self.link_line, = self.ax.plot(_links_pos_x, _links_pos_y, linewidth=5, color="#005AFF")
 
         # set layouts
@@ -188,7 +93,7 @@ class ManipulatorVisualizer:
         self.ax.set_ylabel("Y")
 
         # set axis range
-        _max_link_total_len = sum(self.mani_obj.len_of_links)
+        _max_link_total_len = sum(_p["len_of_links"])
 
         # set x range
         if self.fig_xlim:
@@ -198,8 +103,8 @@ class ManipulatorVisualizer:
             # auto setting
             self.set_xlim(
                 [
-                self.mani_obj.base_pos[0] - _max_link_total_len,
-                self.mani_obj.base_pos[0] + _max_link_total_len
+                _p["base_pos"][0] - _max_link_total_len,
+                _p["base_pos"][0] + _max_link_total_len
                 ]
             )
 
@@ -211,8 +116,8 @@ class ManipulatorVisualizer:
             # auto setting
             self.set_ylim(
                 [
-                self.mani_obj.base_pos[1] - _max_link_total_len,
-                self.mani_obj.base_pos[1] + _max_link_total_len
+                _p["base_pos"][1] - _max_link_total_len,
+                _p["base_pos"][1] + _max_link_total_len
                 ]
             )
 
@@ -220,11 +125,15 @@ class ManipulatorVisualizer:
         """ notice this manipulator's description """
         self.mani_obj.echo_info()
 
+    def get_params(self) -> Dict[str, Any]:
+        """ return parameters """
+        return self.mani_obj.get_params()
+
     def get_joint_angles(self) -> List[float]:
         """ return list of joint angles """
         return self.mani_obj.get_joint_angles()
 
-    def get_joint_potisions(self) -> List[float]:
+    def get_joint_potisions(self) -> List[Union[float, float]]:
         """ return list of joint positions """
         return self.mani_obj.get_joint_positions()
 
@@ -239,19 +148,20 @@ class ManipulatorVisualizer:
     def update_fig_elements(self) -> None:
         """ update location of joint circles and links """
 
-        # get latest manipulator states
-        _latest_joint_positions = self.get_joint_potisions()
+        # get latest manipulator params and states
+        _p = self.get_params()
+        _latest_joint_positions_xy = self.get_joint_potisions()
 
         # update joints
-        for i in range(self.mani_obj.num_of_links):
-            self.joint_circle_patches[i].center = _latest_joint_positions[i]
+        for i in range(self.mani_obj.num_of_links-1):
+            self.joint_circle_patches[i].center = _latest_joint_positions_xy[i]
 
         # update links
         _links_pos_x = []
         _links_pos_y = []
         for i in range(self.mani_obj.num_of_links):
-            _links_pos_x.append(self.mani_obj.joint_positions_xy[i][0])
-            _links_pos_y.append(self.mani_obj.joint_positions_xy[i][1])
+            _links_pos_x.append(_latest_joint_positions_xy[i][0])
+            _links_pos_y.append(_latest_joint_positions_xy[i][1])
         self.link_line.set_data(_links_pos_x, _links_pos_y)
 
     def set_xlim(self, arg) -> None:
@@ -291,12 +201,12 @@ if __name__=="__main__":
     m.echo_info()
     m.savefig()
 
-    # just show figure
-    m.showfig()
+    # just show a figure
+    # m.showfig()
 
-    # animate figure
-    # for i in range(100):
-    #     _buf = m.get_joint_angles()
-    #     _buf[0] = np.sin(i/10)
-    #     m.set_joint_angles(_buf)
-    #     m.updatefig(duration=0.1)
+    # animate figures
+    for i in range(100):
+        _buf = m.get_joint_angles()
+        _buf[0] = np.sin(i/10)
+        m.set_joint_angles(_buf)
+        m.updatefig(duration=0.1)
