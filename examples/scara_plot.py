@@ -1,7 +1,7 @@
 """ example script to visualize scara robot """
 from maniviz.maniplot import ManipulatorVisualizer
 
-# plot example for debug
+# plot example
 m = ManipulatorVisualizer(
     manipulator_type="scara",
     fig_xlim=[],

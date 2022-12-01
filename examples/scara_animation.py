@@ -2,6 +2,7 @@
 import numpy as np
 from maniviz.maniplot import ManipulatorVisualizer
 
+# plot example
 m = ManipulatorVisualizer(
     manipulator_type="scara",
     fig_xlim=[],

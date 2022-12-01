@@ -1,3 +1,4 @@
+""" setup script of maniviz """
 import setuptools
 import maniviz
 

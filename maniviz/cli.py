@@ -3,7 +3,7 @@ from maniviz.maniplot import ManipulatorVisualizer
 
 def main() -> None:
     """ main process """
-    # plot example for debug
+    # plot example
     m = ManipulatorVisualizer(
         manipulator_type="scara",
         fig_xlim=[],
