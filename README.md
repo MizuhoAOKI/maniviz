@@ -16,4 +16,5 @@ $ cd examples
 $ python scara_plot.py
 ```
 
+![](./media/cmdline_output.png)
 ![](./media/scara_plot.png)
