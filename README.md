@@ -1,5 +1,8 @@
 # Maniviz
 Simple visualizer of a manipulator.
+[![Downloads](https://static.pepy.tech/badge/pytorch-mppi)](https://pepy.tech/project/pytorch-mppi)
+[![Downloads](https://static.pepy.tech/badge/maniviz/month)](https://pepy.tech/project/maniviz)
+[![Downloads](https://static.pepy.tech/badge/maniviz/week)](https://pepy.tech/project/maniviz)
 
 # Environmental setup
 1. `cd /path/to/workingdir`
